@@ -1,0 +1,90 @@
+/*L'architecture Remote Method Invocation (RMI) en Java permet à un programme d'invoquer des méthodes sur des objets situés dans d'autres JVM (Java Virtual Machines), que ce soit sur le même hôte ou sur un autre réseau. L'architecture RMI est couramment utilisée pour développer des applications distribuées, facilitant la communication entre clients et serveurs.
+
+1. Composants principaux de l'architecture RMI
+L'architecture RMI repose sur plusieurs composants :
+
+Client RMI : l'application qui fait les appels aux méthodes distantes.
+Serveur RMI : héberge l'objet distant et traite les requêtes des clients.
+Objet distant : une instance d’une classe qui implémente une interface distante, offrant des méthodes que les clients peuvent appeler.
+Registry RMI : un registre qui associe des noms aux objets distants, permettant aux clients de les trouver facilement.
+2. Étapes de mise en place d'une application RMI
+Étape 1 : Création de l'interface distante
+L’interface définit les méthodes que l’objet distant exposera aux clients. Elle doit étendre java.rmi.Remote et déclarer les méthodes à distance en jetant RemoteException.
+
+java
+Copier le code
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface Calculatrice extends Remote {
+    public int addition(int a, int b) throws RemoteException;
+}
+Étape 2 : Création de l'implémentation de l'interface distante
+Cette classe implémente l'interface distante et contient le code de la méthode. Elle doit également étendre UnicastRemoteObject.
+
+java
+Copier le code
+import java.rmi.server.UnicastRemoteObject;
+import java.rmi.RemoteException;
+
+public class CalculatriceImpl extends UnicastRemoteObject implements Calculatrice {
+    public CalculatriceImpl() throws RemoteException {
+        super();
+    }
+
+    @Override
+    public int addition(int a, int b) throws RemoteException {
+        return a + b;
+    }
+}
+Étape 3 : Création du serveur RMI
+Le serveur RMI crée une instance de l’objet distant, puis l’enregistre dans le registre RMI.
+
+java
+Copier le code
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+
+public class ServeurRMI {
+    public static void main(String[] args) {
+        try {
+            // Création de l'instance de l'objet distant
+            Calculatrice calc = new CalculatriceImpl();
+            
+            // Création du registre RMI sur le port 1099 (par défaut)
+            Registry registry = LocateRegistry.createRegistry(1099);
+            
+            // Liaison de l'objet avec un nom dans le registre
+            registry.rebind("CalculatriceService", calc);
+            
+            System.out.println("Serveur RMI prêt.");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+Étape 4 : Création du client RMI
+Le client utilise le registre pour obtenir une référence à l'objet distant, puis appelle ses méthodes.
+
+java
+Copier le code
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+
+public class ClientRMI {
+    public static void main(String[] args) {
+        try {
+            // Recherche du registre RMI sur le port 1099
+            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            
+            // Recherche de l'objet distant par son nom
+            Calculatrice calc = (Calculatrice) registry.lookup("CalculatriceService");
+            
+            // Appel de la méthode distante
+            int resultat = calc.addition(5, 3);
+            System.out.println("Résultat de l'addition : " + resultat);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
